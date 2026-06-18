@@ -1,0 +1,7 @@
+interface:
+  display_name: "Website Dat Ve Xe"
+  short_description: "Bus ticket booking project guide"
+  default_prompt: "Use $website-dat-ve-xe to work on the bus ticket booking website project."
+
+policy:
+  allow_implicit_invocation: true
