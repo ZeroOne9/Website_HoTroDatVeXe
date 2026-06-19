@@ -1,0 +1,228 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  passenger
+  admin
+}
+
+enum UserStatus {
+  active
+  locked
+}
+
+enum VehicleStatus {
+  active
+  maintenance
+  inactive
+}
+
+enum SeatType {
+  standard
+  sleeper
+  vip
+}
+
+enum RouteStatus {
+  active
+  inactive
+}
+
+enum TripStatus {
+  scheduled
+  departed
+  completed
+  cancelled
+}
+
+enum BookingStatus {
+  pending
+  confirmed
+  cancelled
+  expired
+}
+
+enum TicketStatus {
+  valid
+  used
+  cancelled
+}
+
+model User {
+  id           Int        @id @default(autoincrement())
+  fullName     String     @db.VarChar(120)
+  email        String     @unique @db.VarChar(191)
+  phone        String?    @unique @db.VarChar(20)
+  passwordHash String     @db.VarChar(191)
+  role         UserRole   @default(passenger)
+  status       UserStatus @default(active)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  bookings Booking[]
+
+  @@index([role])
+  @@index([status])
+}
+
+model BusCompany {
+  id          Int      @id @default(autoincrement())
+  name        String   @db.VarChar(150)
+  phone       String?  @db.VarChar(20)
+  email       String?  @db.VarChar(191)
+  address     String?  @db.VarChar(255)
+  description String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  vehicles Vehicle[]
+
+  @@unique([name])
+}
+
+model Vehicle {
+  id           Int           @id @default(autoincrement())
+  busCompanyId Int
+  licensePlate String        @unique @db.VarChar(20)
+  name         String        @db.VarChar(120)
+  vehicleType  String        @db.VarChar(80)
+  capacity     Int
+  status       VehicleStatus @default(active)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  busCompany BusCompany @relation(fields: [busCompanyId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  seats      Seat[]
+  trips      Trip[]
+
+  @@index([busCompanyId])
+  @@index([status])
+}
+
+model Seat {
+  id        Int      @id @default(autoincrement())
+  vehicleId Int
+  seatCode  String   @db.VarChar(20)
+  seatType  SeatType @default(standard)
+  floor     Int      @default(1)
+  rowNumber Int?
+  colNumber Int?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  vehicle  Vehicle   @relation(fields: [vehicleId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  bookings Booking[]
+
+  @@unique([vehicleId, seatCode])
+  @@index([vehicleId])
+  @@index([isActive])
+}
+
+model Location {
+  id        Int      @id @default(autoincrement())
+  name      String   @db.VarChar(120)
+  province  String   @db.VarChar(120)
+  address   String?  @db.VarChar(255)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  departureRoutes   Route[] @relation("RouteDepartureLocation")
+  destinationRoutes Route[] @relation("RouteDestinationLocation")
+
+  @@unique([name, province])
+  @@index([province])
+}
+
+model Route {
+  id                    Int         @id @default(autoincrement())
+  departureLocationId   Int
+  destinationLocationId Int
+  distanceKm            Decimal?    @db.Decimal(8, 2)
+  estimatedMinutes      Int?
+  status                RouteStatus @default(active)
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+
+  departureLocation   Location @relation("RouteDepartureLocation", fields: [departureLocationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  destinationLocation Location @relation("RouteDestinationLocation", fields: [destinationLocationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  trips               Trip[]
+
+  @@unique([departureLocationId, destinationLocationId])
+  @@index([departureLocationId])
+  @@index([destinationLocationId])
+  @@index([status])
+}
+
+model Trip {
+  id            Int        @id @default(autoincrement())
+  routeId       Int
+  vehicleId     Int
+  departureTime DateTime
+  arrivalTime   DateTime?
+  priceVnd      Int
+  status        TripStatus @default(scheduled)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  route    Route     @relation(fields: [routeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  vehicle  Vehicle   @relation(fields: [vehicleId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  bookings Booking[]
+
+  @@index([routeId])
+  @@index([vehicleId])
+  @@index([departureTime])
+  @@index([status])
+}
+
+model Booking {
+  id             Int           @id @default(autoincrement())
+  bookingCode    String        @unique @db.VarChar(40)
+  userId         Int?
+  tripId         Int
+  seatId         Int
+  passengerName  String        @db.VarChar(120)
+  passengerPhone String        @db.VarChar(20)
+  passengerEmail String?       @db.VarChar(191)
+  fareVnd        Int
+  status         BookingStatus @default(pending)
+  expiresAt      DateTime?
+  confirmedAt    DateTime?
+  cancelledAt    DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  trip   Trip    @relation(fields: [tripId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  seat   Seat    @relation(fields: [seatId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  ticket Ticket?
+
+  @@index([userId])
+  @@index([tripId])
+  @@index([seatId])
+  @@index([status])
+  @@index([tripId, seatId, status])
+}
+
+model Ticket {
+  id        Int          @id @default(autoincrement())
+  bookingId Int          @unique
+  code      String       @unique @db.VarChar(40)
+  qrCode    String?      @db.Text
+  status    TicketStatus @default(valid)
+  issuedAt  DateTime     @default(now())
+  usedAt    DateTime?
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([status])
+  @@index([issuedAt])
+}
