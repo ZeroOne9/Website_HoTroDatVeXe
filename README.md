@@ -1,36 +1,52 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Website Ho Tro Dat Ve Xe
 
-## Getting Started
+Du an duoc tach thanh 2 ung dung rieng:
 
-First, run the development server:
-
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+```txt
+Website_HoTroDatVeXe-master/
+  backend/
+  frontend/
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Backend
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Backend nam trong `backend/`, dung Next.js Route Handlers, Prisma MySQL, JWT, bcrypt va Zod.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+cd backend
+npm install
+npx prisma generate
+npm run dev
+```
 
-## Learn More
+Backend chay tai:
 
-To learn more about Next.js, take a look at the following resources:
+```txt
+http://localhost:3000
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Frontend proxy `/api/*` ve backend port 3000, nen hay chay backend truoc khi test frontend.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Frontend
 
-## Deploy on Vercel
+Frontend nam trong `frontend/`, dung Next.js App Router va goi backend qua proxy `/api`.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Frontend chay tai:
+
+```txt
+http://localhost:3001
+```
+
+## Ghi chu
+
+- `backend/src/app/api/**/route.ts`: router layer.
+- `backend/src/modules/**/*.controller.ts`: controller layer.
+- `backend/src/modules/**/*.service.ts`: service layer.
+- `backend/prisma/schema.prisma`: model/database schema.
+- `frontend/src/services`: API client va services cho UI.
