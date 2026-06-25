@@ -23,6 +23,7 @@ import {
   updateAdminTripStatus,
   updateAdminVehicleStatus,
   listAdminBookings,
+  getDashboardStats,
 } from "./admin.service";
 import {
   createBusCompanySchema,
@@ -331,5 +332,16 @@ export async function cancelAdminBookingController(request: NextRequest, context
     return successResponse(result, { message: "Huy ve thanh cong." });
   } catch (error) {
     return handleApiError(error, "Khong the huy ve.");
+  }
+}
+
+export async function getDashboardStatsController(request: NextRequest) {
+  try {
+    await requireAdmin(request);
+    const stats = await getDashboardStats();
+
+    return successResponse({ stats }, { message: "Lay thong ke thanh cong." });
+  } catch (error) {
+    return handleApiError(error, "Khong the lay thong ke dashboard.");
   }
 }

@@ -517,3 +517,87 @@ export function listAdminBookings() {
     },
   });
 }
+
+export async function getDashboardStats() {
+  const [
+    totalBookings,
+    pendingBookings,
+    confirmedBookings,
+    cancelledBookings,
+    revenueData,
+    totalTrips,
+    totalVehicles,
+    totalBusCompanies,
+    recentBookings,
+  ] = await Promise.all([
+    prisma.booking.count(),
+    prisma.booking.count({ where: { status: "pending" } }),
+    prisma.booking.count({ where: { status: "confirmed" } }),
+    prisma.booking.count({ where: { status: "cancelled" } }),
+    prisma.booking.aggregate({
+      _sum: { totalFareVnd: true },
+      where: { status: "confirmed" },
+    }),
+    prisma.trip.count(),
+    prisma.vehicle.count(),
+    prisma.busCompany.count(),
+    prisma.booking.findMany({
+      take: 5,
+      orderBy: { createdAt: "desc" },
+      include: {
+        user: {
+          select: {
+            fullName: true,
+            phone: true,
+          },
+        },
+        bookingSeats: {
+          take: 1,
+          orderBy: { id: "asc" },
+          select: {
+            trip: {
+              select: {
+                route: {
+                  select: {
+                    departureLocation: { select: { name: true } },
+                    destinationLocation: { select: { name: true } },
+                  },
+                },
+                vehicle: {
+                  select: {
+                    name: true,
+                    busCompany: { select: { name: true } },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    }),
+  ]);
+
+  return {
+    bookings: {
+      total: totalBookings,
+      pending: pendingBookings,
+      confirmed: confirmedBookings,
+      cancelled: cancelledBookings,
+    },
+    revenue: revenueData._sum?.totalFareVnd || 0,
+    trips: totalTrips,
+    vehicles: totalVehicles,
+    busCompanies: totalBusCompanies,
+    recentBookings: recentBookings.map((booking) => ({
+      id: booking.id,
+      bookingCode: booking.bookingCode,
+      passenger: {
+        fullName: booking.user?.fullName ?? booking.passengerName,
+        phone: booking.user?.phone ?? booking.passengerPhone,
+      },
+      trip: booking.bookingSeats[0]?.trip ?? null,
+      totalPriceVnd: booking.totalFareVnd,
+      status: booking.status,
+    })),
+  };
+}
